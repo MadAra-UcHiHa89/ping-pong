@@ -1,7 +1,7 @@
-// Canvas Related 
-const canvas = document.createElement('canvas');
-const context = canvas.getContext('2d');
-const socket = io('http://localhost:3000');
+// Canvas Related
+const canvas = document.createElement("canvas");
+const context = canvas.getContext("2d");
+const socket = io("http://localhost:3000");
 let isReferee = false;
 let paddleIndex = 0;
 
@@ -12,8 +12,8 @@ let height = 700;
 let paddleHeight = 10;
 let paddleWidth = 50;
 let paddleDiff = 25;
-let paddleX = [ 225, 225 ];
-let trajectoryX = [ 0, 0 ];
+let paddleX = [225, 225];
+let trajectoryX = [0, 0];
 let playerMoved = false;
 
 // Ball
@@ -27,11 +27,13 @@ let speedY = 2;
 let speedX = 0;
 
 // Score for Both Players
-let score = [ 0, 0 ];
+let score = [0, 0];
 
+// We'll Only need to send data about the ball poisiton & the position of each player's paddle to the websocket server hiwhcin turn wil send it to the other player
+// Also the score of both players
 // Create Canvas Element
 function createCanvas() {
-  canvas.id = 'canvas';
+  canvas.id = "canvas";
   canvas.width = width;
   canvas.height = height;
   document.body.appendChild(canvas);
@@ -41,23 +43,23 @@ function createCanvas() {
 // Wait for Opponents
 function renderIntro() {
   // Canvas Background
-  context.fillStyle = 'black';
+  context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
 
   // Intro Text
-  context.fillStyle = 'white';
+  context.fillStyle = "white";
   context.font = "32px Courier New";
-  context.fillText("Waiting for opponent...", 20, (canvas.height / 2) - 30);
+  context.fillText("Waiting for opponent...", 20, canvas.height / 2 - 30);
 }
 
 // Render Everything on Canvas
 function renderCanvas() {
   // Canvas Background
-  context.fillStyle = 'black';
+  context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
 
   // Paddle Color
-  context.fillStyle = 'white';
+  context.fillStyle = "white";
 
   // Bottom Paddle
   context.fillRect(paddleX[0], height - 20, paddleWidth, paddleHeight);
@@ -70,19 +72,19 @@ function renderCanvas() {
   context.setLineDash([4]);
   context.moveTo(0, 350);
   context.lineTo(500, 350);
-  context.strokeStyle = 'grey';
+  context.strokeStyle = "grey";
   context.stroke();
 
   // Ball
   context.beginPath();
   context.arc(ballX, ballY, ballRadius, 2 * Math.PI, false);
-  context.fillStyle = 'white';
+  context.fillStyle = "white";
   context.fill();
 
   // Score
   context.font = "32px Courier New";
-  context.fillText(score[0], 20, (canvas.height / 2) + 50);
-  context.fillText(score[1], 20, (canvas.height / 2) - 30);
+  context.fillText(score[0], 20, canvas.height / 2 + 50);
+  context.fillText(score[1], 20, canvas.height / 2 - 30);
 }
 
 // Reset Ball to Center
@@ -90,7 +92,7 @@ function ballReset() {
   ballX = width / 2;
   ballY = height / 2;
   speedY = 3;
-  socket.emit('ballMove', {
+  socket.emit("ballMove", {
     ballX,
     ballY,
     score,
@@ -105,7 +107,7 @@ function ballMove() {
   if (playerMoved) {
     ballX += speedX;
   }
-  socket.emit('ballMove', {
+  socket.emit("ballMove", {
     ballX,
     ballY,
     score,
@@ -170,56 +172,57 @@ function animate() {
     ballBoundaries();
   }
   renderCanvas();
-  window.requestAnimationFrame(animate);
+  window.requestAnimationFrame(animate); // Again what needs to be done before the browser renders the next frame of the animation
 }
 
 // Load Game, Reset Everything
 function loadGame() {
   createCanvas();
   renderIntro();
-  socket.emit('ready');
+  socket.emit("ready");
 }
 
 function startGame() {
   paddleIndex = isReferee ? 0 : 1;
-  window.requestAnimationFrame(animate);
-  canvas.addEventListener('mousemove', (e) => {
+  window.requestAnimationFrame(animate);// What needs to be done before the browser renders the next frame of the animation
+}
+  canvas.addEventListener("mousemove", (e) => {
     playerMoved = true;
     paddleX[paddleIndex] = e.offsetX;
     if (paddleX[paddleIndex] < 0) {
       paddleX[paddleIndex] = 0;
     }
-    if (paddleX[paddleIndex] > (width - paddleWidth)) {
+    if (paddleX[paddleIndex] > width - paddleWidth) {
       paddleX[paddleIndex] = width - paddleWidth;
     }
-    socket.emit('paddleMove', {
+    socket.emit("paddleMove", {
       xPosition: paddleX[paddleIndex],
     });
     // Hide Cursor
-    canvas.style.cursor = 'none';
+    canvas.style.cursor = "none";
   });
 }
 
 // On Load
 loadGame();
 
-socket.on('connect', () => {
-  console.log('Connected as...', socket.id);
+socket.on("connect", () => {
+  console.log("Connected as...", socket.id);
 });
 
-socket.on('startGame', (refereeId) => {
-  console.log('Referee is', refereeId);
+socket.on("startGame", (refereeId) => {
+  console.log("Referee is", refereeId);
 
   isReferee = socket.id === refereeId;
   startGame();
 });
 
-socket.on('paddleMove', (paddleData) => {
+socket.on("paddleMove", (paddleData) => {
   // Toggle 1 into 0, and 0 into 1
   const opponentPaddleIndex = 1 - paddleIndex;
   paddleX[opponentPaddleIndex] = paddleData.xPosition;
 });
 
-socket.on('ballMove', (ballData) => {
+socket.on("ballMove", (ballData) => {
   ({ ballX, ballY, score } = ballData);
 });
